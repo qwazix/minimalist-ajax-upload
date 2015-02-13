@@ -1,0 +1,17 @@
+<!doctype html>
+<title>minimal file upload with jquery</title>
+<script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+<input type=file id=file onchange=upload() />
+<script>
+function upload(){
+    var formData = new FormData();
+    formData.append('files', $("#file")[0].files[0])
+    $.ajax({
+      url: "upload.php",
+      processData: false,
+      type: "POST",
+      contentType: false,
+      data: formData
+    });
+}
+</script>
