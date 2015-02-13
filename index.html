@@ -3,27 +3,32 @@
 <title>minimal file upload with jquery</title>
 <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
 <script src="jquery-ajax-progress.js"></script>
-<input type=file id=file onchange=show() />
-<button onclick=upload()>save</button>
+<input name=one type=file id=file/><br><img><br>
+<input name=two type=file id=file/><br><img><br>
+<button>save</button>
 <input type=progress id=progress>
 <br>
 <script>
-function show(){
-    var file = $("#file")[0].files[0]
-    var reader  = new FileReader();
-    $('br').after('<img>')
-    reader.onloadend = function () {
-        $('img')[0].src = reader.result;
-    }
-    if (file) {
-      reader.readAsDataURL(file);
-    } else {
-      $('img')[0].src = "";
-    }    
-}
-function upload(){
+$('input[type=file]').change(function(){
+  var file = $(this)[0].files[0]
+  var reader  = new FileReader();
+  $t=$(this)
+  reader.onloadend = function () {
+    $t.nextAll('img')[0].src = reader.result;
+  }
+  if (file) {
+    reader.readAsDataURL(file);
+  } else {
+    $(this).nextAll('img')[0].src = "";
+  }    
+})
+
+$('button').click(function(){ 
     var formData = new FormData();
-    formData.append('files', $("#file")[0].files[0])
+    //collect all files from all the upload boxes
+    $('input[type=file]').each(function(){
+      formData.append($(this).attr('name'), $(this)[0].files[0])
+    })
     $.ajax({
       url: "upload.php",
       processData: false,
@@ -37,7 +42,7 @@ function upload(){
         }
       }
     });
-}
+})
 </script>
 
 
