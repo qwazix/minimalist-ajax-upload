@@ -28,24 +28,16 @@
         // more backward compatibility (and probably performance)
         var dropbox = document.getElementsByTagName("body")[0];
         dropbox.addEventListener("drop", drop, true);
-        dropbox.addEventListener("dragover", function(e){
-            if (e.target.tagName != "TEXTAREA"){
-                e.preventDefault();
-            } else {
-                // save the old textarea text so that we can ignore existing 'file://' uris
-                oldtext = textarea.value;
-                // console.log(e);
-                // e.preventDefault();
-            }
-        }, true)
+        dropbox.addEventListener("dragover", function(e){e.preventDefault()}, true)
+        // firefox needs this too in order to not show the floating cursor on linux
+        // see [blogpost] for why we don't want this
+        dropbox.addEventListener("dragenter", function(e){e.preventDefault()}, true)
 
         var textarea = document.getElementsByTagName("textarea")[0];
-        var oldtext = textarea.value;
-        var progressCharacter = "∎";
 
         function drop(e) {
+            e.preventDefault();
             var files = e.dataTransfer.files;
-            console.log(files);
             for (var i = 0; i < files.length; i++) {
                 var file = files[i];
                 // from https://stackoverflow.com/a/1818400/400257
@@ -55,15 +47,7 @@
                 markdown = " [" + file.identifier + "](00%) ";
                 // if we drop on a textarea, on firefox, we can get the position of the drop
                 // by searching for the 'file://' uri that it appends to the textarea by default
-                if (e.target.tagName != "TEXTAREA"){
-                    insertTextAtCursor(markdown, textarea);
-                    e.preventDefault(); 
-                } else {
-                    // at this point the text in the textarea is still the original one
-
-                    // This is dirty, I know but I can't figure out a better way
-                    setTimeout( function(){insertTextAtDropPoint(markdown, textarea, file.name)},10);
-                }
+                insertTextAtCursor(markdown, textarea);
                 handleFile(file);
             }
         }
@@ -78,33 +62,6 @@
                 // set the cursor to its original position
                 textarea.selectionStart = textarea.selectionEnd = startingPosition + text.length;
             } else throw "Element is not a textarea"
-        }
-
-        function insertTextAtDropPoint(text, textarea, filename){
-            if (textarea.nodeName == "TEXTAREA") {
-                // save cursor position so that we can set it back after the operation on value
-                var startingPosition = textarea.selectionStart;
-                var rxp = new RegExp('file://.*?/'+filename);
-                console.log(rxp);
-                textarea.value = replaceNewPatternInString(rxp, oldtext, textarea.value, text);
-                // set the cursor to its original position
-                textarea.selectionStart = textarea.selectionEnd = startingPosition + text.length;
-            } else throw "Element is not a textarea"
-        }
-
-        function replaceNewPatternInString(pattern, oldstring, newstring, replacement){
-            var index = 0;
-            do {
-                // find first occurence of pattern
-                var match = newstring.substr(index, newstring.length).match(pattern);
-                index += match.index;
-                // take the part of the string from the beginning until the end of the pattern
-                // and check if you can find it in the old string
-                // if you can go to the next occurence of the pattern until you find one
-                // that doesn't exist in the old string.
-                index += match[0].length;
-            } while (oldstring.indexOf(newstring.substr(0, index)) != -1);
-            return newstring.substr(0,index-match[0].length) + replacement + newstring.substr(index,newstring.length);
         }
 
         function handleFile(file){
