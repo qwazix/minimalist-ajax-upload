@@ -30,7 +30,7 @@
         dropbox.addEventListener("drop", drop, true);
         dropbox.addEventListener("dragover", function(e){e.preventDefault()}, true)
         // firefox needs this too in order to not show the floating cursor on linux
-        // see [blogpost] for why we don't want this
+        // see [blogpost](https://mixt.qwazix.com/d/naac7l07tr) for why we don't want this
         dropbox.addEventListener("dragenter", function(e){e.preventDefault()}, true)
 
         var textarea = document.getElementsByTagName("textarea")[0];
@@ -44,11 +44,17 @@
                 description = file.name.substr(0, file.name.lastIndexOf('.')) || file.name;
                 file.identifier = description+"_"+Math.random().toString(36).substring(2, 15);
                 file.progress = 0;
-                markdown = " [" + file.identifier + "](00%) ";
-                // if we drop on a textarea, on firefox, we can get the position of the drop
-                // by searching for the 'file://' uri that it appends to the textarea by default
-                insertTextAtCursor(markdown, textarea);
-                handleFile(file);
+
+                // test if file is allowed else abort
+                var ok = false;
+                for (var i in allowedFileTypes){
+                    if (file.type.match(allowedFileTypes[i])) {ok=true; break;}
+                }
+                if (ok){
+                    markdown = " [" + file.identifier + "](00%) ";
+                    insertTextAtCursor(markdown, textarea);
+                    handleFile(file);
+                } else throw "disallowed file type";
             }
         }
 
@@ -65,12 +71,6 @@
         }
 
         function handleFile(file){
-            var ok = false;
-            for (var i in allowedFileTypes){
-                if (file.type.match(allowedFileTypes[i])) {ok=true; break;}
-            }
-            if (!ok) throw "disallowed file type";
-
             // var reader = new FileReader();
             // reader.readAsDataURL(file);
             var xhr = new XMLHttpRequest();
@@ -98,7 +98,11 @@
             xhr.send(formData);
             xhr.onreadystatechange = function(){
                 if(xhr.readyState == 4){
-                    processResponse(xhr.responseText, file.identifier);
+                    if (xhr.status == 200){
+                        processResponse(xhr.responseText, file.identifier);
+                    } else {
+                        processFailure(file.identifier);
+                    }
                 }
             }
         }
@@ -107,6 +111,10 @@
             var response = JSON.parse(responseText);
             description = response.name.substr(0, response.name.lastIndexOf('.')) || response.name;
             textarea.value = textarea.value.replace(getMarkdownRegex(identifier), "["+ description +"]("+response.url+")");
+        }
+
+        function processFailure(identifier){
+            textarea.value = textarea.value.replace(getMarkdownRegex(identifier), "");
         }
 
         function getMarkdownRegex(identifier){
